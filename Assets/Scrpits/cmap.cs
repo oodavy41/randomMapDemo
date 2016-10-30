@@ -15,7 +15,7 @@ public class cmap : MonoBehaviour {
     [Range(0, 100)]
     public int doublechance=70;
 
-    public enum kind { old,k,dfs};
+    public enum kind { old,k,kruskal,prim};
     public kind kindpos;
 
     public bool costumerSeed;
@@ -62,6 +62,7 @@ public class cmap : MonoBehaviour {
                     kruskal();
                     break;
                 case 3:
+                    prim();
                     break;
             }
         }
@@ -262,8 +263,9 @@ public class cmap : MonoBehaviour {
 
         map=new int[width*2-1,height*2-1];
         for(int x=0;x<width;x++)
-            for(int y=0;y<height;y++)
+            for(int y=0;y<height;y++){
                 map[x*2,y*2]=1;
+            }
 
         int boxNum=1;
         while(edges.Count>0)
@@ -299,9 +301,66 @@ public class cmap : MonoBehaviour {
             edges.RemoveAt(iter);
         }
         
+        width=width*2-1;
+        height=height*2-1;
 
     }
 
+    void prim()
+    {
+        int[,] node=new int[width,height];
+        List<edge> edges=new List<edge>();
+
+        map=new int[width*2-1,height*2-1];
+        for(int x=0;x<width;x++)
+            for(int y=0;y<height;y++)
+                map[x*2,y*2]=1;
+            
+
+        int count=1;
+        int xx=pseudoRandom.Next(width),
+            yy=pseudoRandom.Next(height);
+        node[xx,yy]=1;
+
+        while(count<width*height){
+            pushEdge(edges,xx,yy);
+
+            int pos;
+            edge e;
+            do{
+                pos=pseudoRandom.Next(edges.Count);
+                e=edges[pos];
+                edges.RemoveAt(pos);
+            }while(node[e.a[0],e.a[1]]==node[e.b[0],e.b[1]]);
+
+            map[e.a[0]+e.b[0],e.a[1]+e.b[1]]=1;
+            if(node[e.a[0],e.a[1]]==0){
+                xx=e.a[0];
+                yy=e.a[1];
+            }else{
+                xx=e.b[0];
+                yy=e.b[1];
+            }
+            node[xx,yy]=1;
+            count++;
+        }
+        
+        
+        width=width*2-1;
+        height=height*2-1;
+    }
+
+    void pushEdge(List<edge> edges,int x,int y)
+    {
+        if(x > 0 && map[2*x-1,2*y]==0)
+            edges.Add(new edge(x,y,x-1,y));
+        if(x < width-1 && map[2*x+1,2*y]==0)
+            edges.Add(new edge(x,y,x+1,y));
+        if(y > 0 && map[2*x,2*y-1]==0)
+            edges.Add(new edge(x,y,x,y-1));
+        if(y < height-1 && map[2*x,2*y+1]==0)
+            edges.Add(new edge(x,y,x,y+1));
+    }
 
 
     bool checkC(int x,int y)
@@ -348,6 +407,7 @@ public class cmap : MonoBehaviour {
                 for (int y = 0; y < height; y++)
                 {
                     Gizmos.color = (map[x, y] == 0) ? Color.black : Color.white;
+                    
                     Vector3 pos = new Vector3(-width / 2 + x + .5f, 0, -height / 2 + y + .5f);
                     Gizmos.DrawCube(pos, Vector3.one);
                 }
