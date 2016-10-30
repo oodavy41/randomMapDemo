@@ -21,7 +21,6 @@ public class cmap : MonoBehaviour {
     public bool costumerSeed;
 
     public string seed;
-    private int roadCount;
 
     private List<GameObject> mapObjs;
     private System.Random pseudoRandom;
@@ -40,7 +39,10 @@ public class cmap : MonoBehaviour {
 
     void Start()
     {
-        roadCount = 0;
+        
+        if (!costumerSeed)
+            seed = System.DateTime.Now.ToString() + System.DateTime.Now.Millisecond.ToString();
+        pseudoRandom = new System.Random(seed.GetHashCode());
 
     }
 
@@ -57,6 +59,9 @@ public class cmap : MonoBehaviour {
                     GenerateMap1();
                     break;
                 case 2:
+                    kruskal();
+                    break;
+                case 3:
                     break;
             }
         }
@@ -65,28 +70,74 @@ public class cmap : MonoBehaviour {
     
     void GenerateMap0()
     {
-
         map = new int[width, height];
 
-        if (!costumerSeed)
-            seed = System.DateTime.Now.ToString() + System.DateTime.Now.Millisecond.ToString();
-        pseudoRandom = new System.Random(seed.GetHashCode());
         DarwMap(pseudoRandom, 0, 0, height / 2);
 
         Debug.Log(seed);
     }
 
+    //挖洞大法
+    void DarwMap(System.Random rd,int depth,int posX,int posY)
+    {
+        if (!checkG(posX, posY)||map[posX,posY]==1)
+            return;
+
+        map[posX, posY] = 1;
+        bool[] checks = new bool[4];
+        for(int i=0;i<4;i++) {
+            checks[i] = checkC(posX + changes[i, 0], posY + changes[i, 1]);     
+        }
+        int[] c = new int[4];
+        int ccount = 0;
+        for(int i = 0; i < 4; i++)
+        {
+            if (checks[i])
+            {
+                c[i] = rd.Next(0, 9999);
+                ccount++;
+            }
+            else
+                c[i] = -1;
+        }
+
+        if (ccount == 0)
+            return;
+
+        int maxpos=0;
+        for (int i = 0; i < 4; i++)
+        {
+            if (c[i] > c[maxpos])
+                maxpos = i;
+        }
+        c[maxpos] = -1;
+        
+        DarwMap(rd, depth + 1, posX + changes[maxpos, 0], posY + changes[maxpos, 1]);
+
+        if (ccount > 1)
+        {
+            int nextpos = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                if (c[i] > c[nextpos])
+                    nextpos = i;
+            }
+            int xx = posX + changes[nextpos, 0];
+            int yy = posY + changes[nextpos, 1];
+            if (checkC(xx, yy) && rd.Next(0, 100) < doublechance)
+                DarwMap(rd, depth + 1, posX + changes[nextpos, 0], posY + changes[nextpos, 1]);
+        }
+
+    }
+
+
     void GenerateMap1()
     {
         map = new int[width, height];
-        if (!costumerSeed)
-            seed = System.DateTime.Now.ToString() + System.DateTime.Now.Millisecond.ToString();
-        pseudoRandom = new System.Random(seed.GetHashCode());
 
         splitMap(pseudoRandom, 0, width - 1, 0, height - 1);
 
     }
-
 
     //递归分割
     void splitMap(System.Random rb,int xmi,int xma,int ymi,int yma)
@@ -181,63 +232,77 @@ public class cmap : MonoBehaviour {
 
         return;
     }
-    
 
 
-
-    //挖洞大法
-    void DarwMap(System.Random rd,int depth,int posX,int posY)
-    {
-        if (!checkG(posX, posY)||map[posX,posY]==1)
-            return;
-
-        map[posX, posY] = 1;
-        roadCount++;
-        bool[] checks = new bool[4];
-        for(int i=0;i<4;i++) {
-            checks[i] = checkC(posX + changes[i, 0], posY + changes[i, 1]);     
-        }
-        int[] c = new int[4];
-        int ccount = 0;
-        for(int i = 0; i < 4; i++)
-        {
-            if (checks[i])
-            {
-                c[i] = rd.Next(0, 9999);
-                ccount++;
-            }
-            else
-                c[i] = -1;
-        }
-
-        if (ccount == 0)
-            return;
-
-        int maxpos=0;
-        for (int i = 0; i < 4; i++)
-        {
-            if (c[i] > c[maxpos])
-                maxpos = i;
-        }
-        c[maxpos] = -1;
+    public class edge{
         
-        DarwMap(rd, depth + 1, posX + changes[maxpos, 0], posY + changes[maxpos, 1]);
+        public int[] a;
+        public int[] b;
 
-        if (ccount > 1)
+        public edge(int x1,int y1,int x2,int y2)
         {
-            int nextpos = 0;
-            for (int i = 0; i < 4; i++)
-            {
-                if (c[i] > c[nextpos])
-                    nextpos = i;
-            }
-            int xx = posX + changes[nextpos, 0];
-            int yy = posY + changes[nextpos, 1];
-            if (checkC(xx, yy) && rd.Next(0, 100) < doublechance)
-                DarwMap(rd, depth + 1, posX + changes[nextpos, 0], posY + changes[nextpos, 1]);
+            a=new int[]{x1,y1};
+            b=new int[]{x2,y2};
         }
+    }
+
+    void kruskal()
+    {
+        int[,] node=new int[width,height];
+
+        List<edge> edges=new List<edge>();
+        for(int x=0;x<width;x++){
+            for(int y=0;y<height;y++){
+                if(x!=width-1)
+                    edges.Add(new edge(x,y,x+1,y));
+                if(y!=height-1)
+                    edges.Add(new edge(x,y,x,y+1));
+            }
+        }
+
+        map=new int[width*2-1,height*2-1];
+        for(int x=0;x<width;x++)
+            for(int y=0;y<height;y++)
+                map[x*2,y*2]=1;
+
+        int boxNum=1;
+        while(edges.Count>0)
+        {
+            int iter=pseudoRandom.Next(edges.Count);
+            edge value=edges[iter];
+            int ax=value.a[0],
+                ay=value.a[1],
+                bx=value.b[0],
+                by=value.b[1],
+                a=node[ax,ay],
+                b=node[bx,by];
+            if(a==0&&b==0){
+                node[ax,ay]=node[bx,by]=boxNum;
+                boxNum++;
+                map[ax+bx,ay+by]=1;
+            }else if(a==0||b==0){
+                if(a==0)
+                    node[ax,ay]=node[bx,by];
+                else
+                    node[bx,by]=node[ax,ay];
+                map[ax+bx,ay+by]=1;
+            }else if(a!=b){
+                //todo:替换为并查集
+                for(int x=0;x<width;x++)
+                    for(int y=0;y<height;y++){
+                        if(node[x,y]==b)
+                            node[x,y]=a;
+                    }
+                map[ax+bx,ay+by]=1;
+            }
+
+            edges.RemoveAt(iter);
+        }
+        
 
     }
+
+
 
     bool checkC(int x,int y)
     {
