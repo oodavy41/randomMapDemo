@@ -38,6 +38,7 @@ public class cmap : MonoBehaviour
 
     int[,] map;
 
+
     void Start()
     {
 
@@ -250,6 +251,7 @@ public class cmap : MonoBehaviour
         }
     }
 
+    //并查集类，一维数组实现
     public class UFset
     {
         int[] parents;
@@ -264,11 +266,11 @@ public class cmap : MonoBehaviour
 
         public bool union(int a, int b)
         {
-            if(root(a)==root(b))
+            if (root(a) == root(b))
                 return false;
             else
             {
-                parents[a]=root(b);
+                parents[root(b)] = root(a);
                 return true;
             }
 
@@ -286,7 +288,7 @@ public class cmap : MonoBehaviour
     void kruskal()
     {
         //int[,] node = new int[width, height];
-        UFset set=new UFset(width*height);
+        UFset set = new UFset(width * height);
 
         List<edge> edges = new List<edge>();
         for (int x = 0; x < width; x++)
@@ -307,7 +309,7 @@ public class cmap : MonoBehaviour
                 map[x * 2, y * 2] = 1;
             }
 
-        int boxNum = 1;
+
         while (edges.Count > 0)
         {
             int iter = pseudoRandom.Next(edges.Count);
@@ -319,8 +321,8 @@ public class cmap : MonoBehaviour
             //a = node[ax, ay],
             //b = node[bx, by];
 
-            if(set.union(ax*height+ay,bx*height+by))
-                map[ax+bx,ay+by]=1;
+            if (set.union(ax * height + ay, bx * height + by))
+                map[ax + bx, ay + by] = 1;
 
             edges.RemoveAt(iter);
         }
