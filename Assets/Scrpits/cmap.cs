@@ -3,19 +3,20 @@ using System.Collections;
 using System;
 using System.Collections.Generic;
 
-public class cmap : MonoBehaviour {
+public class cmap : MonoBehaviour
+{
 
     public int width;
     public int height;
 
     [Range(0, 1)]
-    public float fillness=0.35f;
+    public float fillness = 0.35f;
     [Range(0, 99999)]
-    public float throughChance=1350;
+    public float throughChance = 1350;
     [Range(0, 100)]
-    public int doublechance=70;
+    public int doublechance = 70;
 
-    public enum kind { old,k,kruskal,prim};
+    public enum kind { old, k, kruskal, prim };
     public kind kindpos;
 
     public bool costumerSeed;
@@ -28,18 +29,18 @@ public class cmap : MonoBehaviour {
 
     private int[,] poss;
 
-    int[,] changes = { 
+    int[,] changes = {
         { 0, 1 },
         { 0, -1 },
         { -1, 0 },
         { 1, 0 }
     };
-    
+
     int[,] map;
 
     void Start()
     {
-        
+
         if (!costumerSeed)
             seed = System.DateTime.Now.ToString() + System.DateTime.Now.Millisecond.ToString();
         pseudoRandom = new System.Random(seed.GetHashCode());
@@ -68,7 +69,7 @@ public class cmap : MonoBehaviour {
         }
     }
 
-    
+
     void GenerateMap0()
     {
         map = new int[width, height];
@@ -79,19 +80,20 @@ public class cmap : MonoBehaviour {
     }
 
     //挖洞大法
-    void DarwMap(System.Random rd,int depth,int posX,int posY)
+    void DarwMap(System.Random rd, int depth, int posX, int posY)
     {
-        if (!checkG(posX, posY)||map[posX,posY]==1)
+        if (!checkG(posX, posY) || map[posX, posY] == 1)
             return;
 
         map[posX, posY] = 1;
         bool[] checks = new bool[4];
-        for(int i=0;i<4;i++) {
-            checks[i] = checkC(posX + changes[i, 0], posY + changes[i, 1]);     
+        for (int i = 0; i < 4; i++)
+        {
+            checks[i] = checkC(posX + changes[i, 0], posY + changes[i, 1]);
         }
         int[] c = new int[4];
         int ccount = 0;
-        for(int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             if (checks[i])
             {
@@ -105,14 +107,14 @@ public class cmap : MonoBehaviour {
         if (ccount == 0)
             return;
 
-        int maxpos=0;
+        int maxpos = 0;
         for (int i = 0; i < 4; i++)
         {
             if (c[i] > c[maxpos])
                 maxpos = i;
         }
         c[maxpos] = -1;
-        
+
         DarwMap(rd, depth + 1, posX + changes[maxpos, 0], posY + changes[maxpos, 1]);
 
         if (ccount > 1)
@@ -141,13 +143,13 @@ public class cmap : MonoBehaviour {
     }
 
     //递归分割
-    void splitMap(System.Random rb,int xmi,int xma,int ymi,int yma)
+    void splitMap(System.Random rb, int xmi, int xma, int ymi, int yma)
     {
         bool fx, fy;
         fx = xmi < (xma - 1);
         fy = ymi < (yma - 1);
 
-        int x=0, y=0;
+        int x = 0, y = 0;
 
         if (!fx && !fy || xmi == xma || ymi == yma)
             return;
@@ -157,7 +159,7 @@ public class cmap : MonoBehaviour {
             x = rb.Next(xmi + 1, xma);
             for (int i = ymi; i <= yma; i++)
                 map[x, i] = 1;
-            
+
         }
 
         if (fy)
@@ -176,7 +178,7 @@ public class cmap : MonoBehaviour {
             splitMap(rb, xmi, x - 1, y + 1, yma);
             splitMap(rb, x + 1, xma, y + 1, yma);
 
-            
+
 
         }
         else if (fx)
@@ -218,7 +220,7 @@ public class cmap : MonoBehaviour {
                 }
                 else
                 {
-                    if (canDarw(x,digPoint[i]) < 3)
+                    if (canDarw(x, digPoint[i]) < 3)
                         map[x, digPoint[i]] = 0;
                     else if (canDarw(x, digPoint[i] + 1) < 3)
                         map[x, digPoint[i] + 1] = 0;
@@ -235,142 +237,170 @@ public class cmap : MonoBehaviour {
     }
 
 
-    public class edge{
-        
+    public class edge
+    {
+
         public int[] a;
         public int[] b;
 
-        public edge(int x1,int y1,int x2,int y2)
+        public edge(int x1, int y1, int x2, int y2)
         {
-            a=new int[]{x1,y1};
-            b=new int[]{x2,y2};
+            a = new int[] { x1, y1 };
+            b = new int[] { x2, y2 };
+        }
+    }
+
+    public class UFset
+    {
+        int[] parents;
+
+        public UFset(int size)
+        {
+            parents = new int[size];
+
+            for (int i = 0; i < parents.Length; i++)
+                parents[i] = i;
+        }
+
+        public bool union(int a, int b)
+        {
+            if(root(a)==root(b))
+                return false;
+            else
+            {
+                parents[a]=root(b);
+                return true;
+            }
+
+        }
+
+        int root(int a)
+        {
+            if (parents[a] == a)
+                return a;
+            else
+                return parents[a] = root(parents[a]);
         }
     }
 
     void kruskal()
     {
-        int[,] node=new int[width,height];
+        //int[,] node = new int[width, height];
+        UFset set=new UFset(width*height);
 
-        List<edge> edges=new List<edge>();
-        for(int x=0;x<width;x++){
-            for(int y=0;y<height;y++){
-                if(x!=width-1)
-                    edges.Add(new edge(x,y,x+1,y));
-                if(y!=height-1)
-                    edges.Add(new edge(x,y,x,y+1));
+        List<edge> edges = new List<edge>();
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (x != width - 1)
+                    edges.Add(new edge(x, y, x + 1, y));
+                if (y != height - 1)
+                    edges.Add(new edge(x, y, x, y + 1));
             }
         }
 
-        map=new int[width*2-1,height*2-1];
-        for(int x=0;x<width;x++)
-            for(int y=0;y<height;y++){
-                map[x*2,y*2]=1;
+        map = new int[width * 2 - 1, height * 2 - 1];
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                map[x * 2, y * 2] = 1;
             }
 
-        int boxNum=1;
-        while(edges.Count>0)
+        int boxNum = 1;
+        while (edges.Count > 0)
         {
-            int iter=pseudoRandom.Next(edges.Count);
-            edge value=edges[iter];
-            int ax=value.a[0],
-                ay=value.a[1],
-                bx=value.b[0],
-                by=value.b[1],
-                a=node[ax,ay],
-                b=node[bx,by];
-            if(a==0&&b==0){
-                node[ax,ay]=node[bx,by]=boxNum;
-                boxNum++;
+            int iter = pseudoRandom.Next(edges.Count);
+            edge value = edges[iter];
+            int ax = value.a[0],
+                ay = value.a[1],
+                bx = value.b[0],
+                by = value.b[1];
+            //a = node[ax, ay],
+            //b = node[bx, by];
+
+            if(set.union(ax*height+ay,bx*height+by))
                 map[ax+bx,ay+by]=1;
-            }else if(a==0||b==0){
-                if(a==0)
-                    node[ax,ay]=node[bx,by];
-                else
-                    node[bx,by]=node[ax,ay];
-                map[ax+bx,ay+by]=1;
-            }else if(a!=b){
-                //todo:替换为并查集
-                for(int x=0;x<width;x++)
-                    for(int y=0;y<height;y++){
-                        if(node[x,y]==b)
-                            node[x,y]=a;
-                    }
-                map[ax+bx,ay+by]=1;
-            }
 
             edges.RemoveAt(iter);
         }
-        
-        width=width*2-1;
-        height=height*2-1;
+
+        width = width * 2 - 1;
+        height = height * 2 - 1;
 
     }
 
     void prim()
     {
-        int[,] node=new int[width,height];
-        List<edge> edges=new List<edge>();
+        int[,] node = new int[width, height];
+        List<edge> edges = new List<edge>();
 
-        map=new int[width*2-1,height*2-1];
-        for(int x=0;x<width;x++)
-            for(int y=0;y<height;y++)
-                map[x*2,y*2]=1;
-            
+        map = new int[width * 2 - 1, height * 2 - 1];
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                map[x * 2, y * 2] = 1;
 
-        int count=1;
-        int xx=pseudoRandom.Next(width),
-            yy=pseudoRandom.Next(height);
-        node[xx,yy]=1;
 
-        while(count<width*height){
-            pushEdge(edges,xx,yy);
+        int count = 1;
+        int xx = pseudoRandom.Next(width),
+            yy = pseudoRandom.Next(height);
+        node[xx, yy] = 1;
+
+        while (count < width * height)
+        {
+            pushEdge(edges, xx, yy);
 
             int pos;
             edge e;
-            do{
-                pos=pseudoRandom.Next(edges.Count);
-                e=edges[pos];
+            do
+            {
+                pos = pseudoRandom.Next(edges.Count);
+                e = edges[pos];
                 edges.RemoveAt(pos);
-            }while(node[e.a[0],e.a[1]]==node[e.b[0],e.b[1]]);
+            } while (node[e.a[0], e.a[1]] == node[e.b[0], e.b[1]]);
 
-            map[e.a[0]+e.b[0],e.a[1]+e.b[1]]=1;
-            if(node[e.a[0],e.a[1]]==0){
-                xx=e.a[0];
-                yy=e.a[1];
-            }else{
-                xx=e.b[0];
-                yy=e.b[1];
+            map[e.a[0] + e.b[0], e.a[1] + e.b[1]] = 1;
+            if (node[e.a[0], e.a[1]] == 0)
+            {
+                xx = e.a[0];
+                yy = e.a[1];
             }
-            node[xx,yy]=1;
+            else
+            {
+                xx = e.b[0];
+                yy = e.b[1];
+            }
+            node[xx, yy] = 1;
             count++;
         }
-        
-        
-        width=width*2-1;
-        height=height*2-1;
+
+
+        width = width * 2 - 1;
+        height = height * 2 - 1;
     }
 
-    void pushEdge(List<edge> edges,int x,int y)
+    void pushEdge(List<edge> edges, int x, int y)
     {
-        if(x > 0 && map[2*x-1,2*y]==0)
-            edges.Add(new edge(x,y,x-1,y));
-        if(x < width-1 && map[2*x+1,2*y]==0)
-            edges.Add(new edge(x,y,x+1,y));
-        if(y > 0 && map[2*x,2*y-1]==0)
-            edges.Add(new edge(x,y,x,y-1));
-        if(y < height-1 && map[2*x,2*y+1]==0)
-            edges.Add(new edge(x,y,x,y+1));
+        if (x > 0 && map[2 * x - 1, 2 * y] == 0)
+            edges.Add(new edge(x, y, x - 1, y));
+        if (x < width - 1 && map[2 * x + 1, 2 * y] == 0)
+            edges.Add(new edge(x, y, x + 1, y));
+        if (y > 0 && map[2 * x, 2 * y - 1] == 0)
+            edges.Add(new edge(x, y, x, y - 1));
+        if (y < height - 1 && map[2 * x, 2 * y + 1] == 0)
+            edges.Add(new edge(x, y, x, y + 1));
     }
 
 
-    bool checkC(int x,int y)
+    bool checkC(int x, int y)
     {
         return checkG(x, y) && canDarw(x, y) < 2;
     }
 
 
     ///目标墙可以挖与否
-    bool checkG(int x, int y) {   
+    bool checkG(int x, int y)
+    {
         if (x < 0 || x >= width)
             return false;
         if (y < 0 || y >= height)
@@ -383,15 +413,15 @@ public class cmap : MonoBehaviour {
 
 
     //目标方块上下左右情况
-    int canDarw(int gridX, int gridY)  
+    int canDarw(int gridX, int gridY)
     {
         int wallCount = 0;
-        for(int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             int x = gridX + changes[i, 0];
             int y = gridY + changes[i, 1];
             if (!(x < 0 || x >= width || y < 0 || y >= height) && map[x, y] == 1)
-                wallCount ++;
+                wallCount++;
         }
 
         return wallCount;
@@ -407,7 +437,7 @@ public class cmap : MonoBehaviour {
                 for (int y = 0; y < height; y++)
                 {
                     Gizmos.color = (map[x, y] == 0) ? Color.black : Color.white;
-                    
+
                     Vector3 pos = new Vector3(-width / 2 + x + .5f, 0, -height / 2 + y + .5f);
                     Gizmos.DrawCube(pos, Vector3.one);
                 }
